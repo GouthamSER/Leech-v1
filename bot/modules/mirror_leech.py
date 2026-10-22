@@ -401,17 +401,25 @@ async def wzmlxcb(_, query):
         except Exception as err:
             LOGGER.error(f"TG Log Display : {str(err)}")
     elif data[2] == "webpaste":
-        await query.answer()
         async with aiopen('log.txt', 'r') as f:
             logFile = await f.read()
-        cget = create_scraper().request
-        resp = cget('POST', 'https://spaceb.in/api/v1/documents', data={'content': logFile, 'extension': 'None'}).json()
-        if resp['status'] == 201:
-            btn = ButtonMaker()
-            btn.ubutton('📨 Web Paste (SB)', f"https://spaceb.in/{resp['payload']['id']}")
-            await editReplyMarkup(message, btn.build_menu(1))
-        else:
-            LOGGER.error(f"Web Paste Failed : {str(err)}")
+        def _paste():
+            r = create_scraper().request('POST', 'https://spaceb.in/api/v1/documents',
+                                         data={'content': logFile, 'extension': 'None'}, timeout=30)
+            return r.json()
+        try:
+            resp = await sync_to_async(_paste)
+            if resp.get('status') == 201:
+                btn = ButtonMaker()
+                btn.ubutton('📨 Web Paste (SB)', f"https://spaceb.in/{resp['payload']['id']}")
+                await query.answer()
+                await editReplyMarkup(message, btn.build_menu(1))
+            else:
+                LOGGER.error(f"Web Paste Failed : {resp}")
+                await query.answer("Web paste failed. Try again later.", show_alert=True)
+        except Exception as err:
+            LOGGER.error(f"Web Paste Failed : {err}")
+            await query.answer("Web paste service unreachable. Try again later.", show_alert=True)
     elif data[2] == "botpm":
         await query.answer(url=f"https://t.me/{bot_name}?start=wzmlx")
     elif data[2] == "help":
