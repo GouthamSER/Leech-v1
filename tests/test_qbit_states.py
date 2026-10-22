@@ -75,7 +75,7 @@ def test_requirements_cover_imports():
                "imdb": "cinemagoer", "magic": "python-magic", "pyrogram": "pyrofork", "qbittorrentapi": "qbittorrent-api",
                "speedtest": "speedtest-cli", "yt_dlp": "yt-dlp", "aria2p": "aria2p", "pkg_resources": "setuptools"}
     # mega comes from megasdk in base image
-    skip = {"bot", "web", "mega"}
+    skip = {"bot", "web", "mega", "health", "envfiles", "update", "driveid", "gen_sa_accounts"}
     req = {re.split(r"[\[<>=~ @]", l.strip().lower().replace("_", "-"))[0]
            for l in (ROOT / "requirements.txt").read_text().splitlines()
            if l.strip() and not l.startswith("git+")} | {"lk21"}
@@ -112,3 +112,21 @@ def test_event_loop_runtime():
     asyncio.set_event_loop(loop)
     assert asyncio.get_event_loop() is loop
     loop.close()
+
+
+def test_health_server_answers():
+    import importlib.util, socket, urllib.request
+    spec = importlib.util.spec_from_file_location("health", ROOT / "health.py")
+    m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+    s = socket.socket(); s.bind(("127.0.0.1", 0)); port = s.getsockname()[1]; s.close()
+    srv = m.start_health_server(port, "127.0.0.1")
+    try:
+        assert urllib.request.urlopen(f"http://127.0.0.1:{port}/", timeout=3).read() == b"ok"
+        c = socket.create_connection(("127.0.0.1", port), timeout=3); c.close()  # TCP check
+    finally:
+        srv.shutdown()
+
+
+def test_health_wired_in_init():
+    s = (ROOT / "bot/__init__.py").read_text()
+    assert "start_health_server(" in s
