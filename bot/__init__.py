@@ -757,6 +757,16 @@ if ospath.exists('shorteners.txt'):
 if BASE_URL:
     Popen(f"gunicorn web.wserver:app --bind 0.0.0.0:{BASE_URL_PORT} --worker-class gevent", shell=True)
 
+# Health check port for Koyeb/Render etc. Uses $PORT, else 8000. Skipped if gunicorn already owns that port.
+try:
+    from health import start_health_server
+    HEALTH_PORT = int(environ.get('PORT') or 8000)
+    if not (BASE_URL and BASE_URL_PORT == HEALTH_PORT):
+        start_health_server(HEALTH_PORT)
+        log_info(f"Health check server listening on port {HEALTH_PORT}")
+except Exception as e:
+    log_error(f"Health server not started: {e}")
+
 srun(["qbittorrent-nox", "-d", f"--profile={getcwd()}"])
 if not ospath.exists('.netrc'):
     with open('.netrc', 'w'):
