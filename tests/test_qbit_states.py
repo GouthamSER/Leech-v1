@@ -137,3 +137,25 @@ def test_webpaste_no_undefined_err_and_handles_bad_json():
     blk = s[s.index('data[2] == "webpaste"'):s.index('data[2] == "botpm"')]
     assert "except Exception as err" in blk and "timeout=" in blk
     assert "sync_to_async(_paste)" in blk
+
+
+def _load_added_ok():
+    src = (ROOT / "bot/helper/mirror_utils/download_utils/qbit_download.py").read_text()
+    fn = next(n for n in ast.parse(src).body if isinstance(n, ast.FunctionDef) and n.name == "_added_ok")
+    ns = {}
+    exec(ast.get_source_segment(src, fn), ns)
+    return ns["_added_ok"]
+
+
+def test_added_ok_old_and_new_api():
+    f = _load_added_ok()
+    assert f("Ok.") and f("ok.") and not f("Fails.")
+    assert f({"success_count": 1, "failure_count": 0, "pending_count": 0, "added_torrent_ids": ["x"]})
+    assert f({"success_count": 0, "failure_count": 0, "pending_count": 1})
+    assert not f({"success_count": 0, "failure_count": 1, "pending_count": 0})
+    assert f({"unknown": 1})
+
+
+def test_no_raw_lower_on_add_result():
+    s = (ROOT / "bot/helper/mirror_utils/download_utils/qbit_download.py").read_text()
+    assert "op.lower()" not in s
