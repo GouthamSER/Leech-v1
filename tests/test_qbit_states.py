@@ -64,3 +64,33 @@ def test_envfiles_roundtrip(tmp_path):
     assert set(out) == {"token.pickle", "cookies.txt"}
     assert (tmp_path / "token.pickle").read_bytes() == raw
     assert (tmp_path / "cookies.txt").read_text() == "# plain text"
+
+
+def test_requirements_cover_imports():
+    """Every third-party import must map to a requirement (catches 'No module named pytz')."""
+    import sys
+    std = set(sys.stdlib_module_names)
+    pkg_for = {"PIL": "pillow", "bs4": "beautifulsoup4", "dotenv": "python-dotenv", "google": "google-auth-oauthlib",
+               "googleapiclient": "google-api-python-client", "google_auth_oauthlib": "google-auth-oauthlib",
+               "imdb": "cinemagoer", "magic": "python-magic", "pyrogram": "pyrofork", "qbittorrentapi": "qbittorrent-api",
+               "speedtest": "speedtest-cli", "yt_dlp": "yt-dlp", "aria2p": "aria2p", "pkg_resources": "setuptools"}
+    # mega comes from megasdk in base image
+    skip = {"bot", "web", "mega"}
+    req = {re.split(r"[\[<>=~ @]", l.strip().lower().replace("_", "-"))[0]
+           for l in (ROOT / "requirements.txt").read_text().splitlines()
+           if l.strip() and not l.startswith("git+")} | {"lk21"}
+    for p in ROOT.rglob("*.py"):
+        if "tests" in p.parts:
+            continue
+        for n in ast.walk(ast.parse(p.read_text())):
+            if isinstance(n, ast.Import):
+                mods = [a.name.split(".")[0] for a in n.names]
+            elif isinstance(n, ast.ImportFrom) and n.level == 0 and n.module:
+                mods = [n.module.split(".")[0]]
+            else:
+                continue
+            for m in mods:
+                if m in std or m in skip:
+                    continue
+                need = pkg_for.get(m, m).lower().replace("_", "-")
+                assert need in req, f"{p}: import {m} -> add '{need}' to requirements.txt"
