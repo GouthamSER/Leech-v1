@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from time import time
+from qbittorrentapi import Conflict409Error
 from aiofiles.os import remove as aioremove, path as aiopath
 
 from bot import download_dict, download_dict_lock, get_client, LOGGER, config_dict, non_queued_dl, queue_dict_lock
@@ -52,8 +53,12 @@ async def add_qb_torrent(link, path, listener, ratio, seed_time):
             url = None
             tpath = link
         added_to_queue, event = await is_queued(listener.uid)
-        op = await sync_to_async(client.torrents_add, url, tpath, path, is_paused=added_to_queue, tags=f'{listener.uid}',
-                                 ratio_limit=ratio, seeding_time_limit=seed_time, headers={'user-agent': 'Wget/1.12'})
+        try:
+            op = await sync_to_async(client.torrents_add, url, tpath, path, is_paused=added_to_queue, tags=f'{listener.uid}',
+                                     ratio_limit=ratio, seeding_time_limit=seed_time, headers={'user-agent': 'Wget/1.12'})
+        except Conflict409Error:
+            # qBit 5.2+ answers 409 when every torrent failed to add (duplicate / invalid)
+            op = "Fails."
         if _added_ok(op):
             tor_info = await sync_to_async(client.torrents_info, tag=f'{listener.uid}')
             if len(tor_info) == 0:
