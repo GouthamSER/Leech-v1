@@ -194,6 +194,8 @@ async def sendRss(text):
 
 
 async def deleteMessage(message):
+    if message is None or not hasattr(message, 'delete'):  # sendMessage may return None/error str
+        return
     try:
         await message.delete()
     except Exception as e:
