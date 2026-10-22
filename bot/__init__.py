@@ -16,12 +16,17 @@ from aria2p import API as ariaAPI, Client as ariaClient
 from qbittorrentapi import Client as qbClient
 from socket import setdefaulttimeout
 from logging import getLogger, Formatter, FileHandler, StreamHandler, INFO, ERROR, basicConfig, error as log_error, info as log_info, warning as log_warning
-from uvloop import install
+from asyncio import set_event_loop, new_event_loop
+try:
+    from uvloop import new_event_loop as _uv_new_loop
+except ImportError:
+    _uv_new_loop = new_event_loop
 
 #from faulthandler import enable as faulthandler_enable
 #faulthandler_enable()
 
-install()
+# new uvloop: install() no longer creates a main-thread loop; set it explicitly
+set_event_loop(_uv_new_loop())
 setdefaulttimeout(600)
 
 pyroutils.MIN_CHAT_ID = -999999999999
