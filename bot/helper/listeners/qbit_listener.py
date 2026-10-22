@@ -156,7 +156,7 @@ async def __qb_listener():
                             state not in ['checkingUP', 'checkingDL', 'checkingResumeData']:
                         QbTorrents[tag]['uploaded'] = True
                         __onDownloadComplete(tor_info)
-                    elif state in ['pausedUP', 'pausedDL'] and QbTorrents[tag]['seeding']:
+                    elif state in ['pausedUP', 'pausedDL', 'stoppedUP', 'stoppedDL'] and QbTorrents[tag]['seeding']:
                         QbTorrents[tag]['seeding'] = False
                         __onSeedFinish(tor_info)
             except Exception as e:

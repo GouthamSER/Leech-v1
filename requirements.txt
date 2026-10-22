@@ -33,7 +33,7 @@ pymongo
 pyrofork==2.2.11
 python-dotenv
 python-magic
-qbittorrent-api
+qbittorrent-api>=2025.11.0
 requests
 speedtest-cli
 telegraph

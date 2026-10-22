@@ -897,7 +897,7 @@ def gdtot(url):
         raise DirectDownloadLinkException(
             f'ERROR: {e.__class__.__name__} with {token_url}'
         ) from e
-    path = findall('\("(.*?)"\)', token_page.text)
+    path = findall(r'\("(.*?)"\)', token_page.text)
     if not path:
         raise DirectDownloadLinkException('ERROR: Cannot bypass this')
     path = path[0]
@@ -915,7 +915,7 @@ def sharer_scraper(url):
         res = cget('GET', url, headers=header)
     except Exception as e:
         raise DirectDownloadLinkException(f'ERROR: {e.__class__.__name__}') from e
-    key = findall('"key",\s+"(.*?)"', res.text)
+    key = findall(r'"key",\s+"(.*?)"', res.text)
     if not key:
         raise DirectDownloadLinkException("ERROR: Key not found!")
     key = key[0]
