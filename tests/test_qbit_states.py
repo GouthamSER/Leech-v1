@@ -94,3 +94,21 @@ def test_requirements_cover_imports():
                     continue
                 need = pkg_for.get(m, m).lower().replace("_", "-")
                 assert need in req, f"{p}: import {m} -> add '{need}' to requirements.txt"
+
+
+def test_event_loop_set_before_pyrogram():
+    s = (ROOT / "bot/__init__.py").read_text()
+    assert "set_event_loop(" in s and "\ninstall()" not in s
+    assert s.index("set_event_loop(_uv_new_loop())") < s.index("bot = wztgClient(")
+
+
+def test_event_loop_runtime():
+    import asyncio
+    try:
+        import uvloop
+    except ImportError:
+        return
+    loop = uvloop.new_event_loop()
+    asyncio.set_event_loop(loop)
+    assert asyncio.get_event_loop() is loop
+    loop.close()
