@@ -30,6 +30,18 @@ def __get_hash_file(path):
 """
 
 
+
+def _added_ok(op):
+    """torrents_add result: old qBit/api -> str "Ok."; qBit 5.2+ (API 2.14+) -> dict-like metadata."""
+    if isinstance(op, str):
+        return op.strip().lower().startswith("ok")
+    try:
+        if op.get("failure_count", 0) and not (op.get("success_count", 0) or op.get("pending_count", 0)):
+            return False
+    except AttributeError:
+        pass
+    return bool(op) or op == {}
+
 async def add_qb_torrent(link, path, listener, ratio, seed_time):
     client = await sync_to_async(get_client)
     ADD_TIME = time()
@@ -42,7 +54,7 @@ async def add_qb_torrent(link, path, listener, ratio, seed_time):
         added_to_queue, event = await is_queued(listener.uid)
         op = await sync_to_async(client.torrents_add, url, tpath, path, is_paused=added_to_queue, tags=f'{listener.uid}',
                                  ratio_limit=ratio, seeding_time_limit=seed_time, headers={'user-agent': 'Wget/1.12'})
-        if op.lower() == "ok.":
+        if _added_ok(op):
             tor_info = await sync_to_async(client.torrents_info, tag=f'{listener.uid}')
             if len(tor_info) == 0:
                 while True:
