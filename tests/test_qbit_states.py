@@ -130,3 +130,10 @@ def test_health_server_answers():
 def test_health_wired_in_init():
     s = (ROOT / "bot/__init__.py").read_text()
     assert "start_health_server(" in s
+
+
+def test_webpaste_no_undefined_err_and_handles_bad_json():
+    s = (ROOT / "bot/modules/mirror_leech.py").read_text()
+    blk = s[s.index('data[2] == "webpaste"'):s.index('data[2] == "botpm"')]
+    assert "except Exception as err" in blk and "timeout=" in blk
+    assert "sync_to_async(_paste)" in blk
