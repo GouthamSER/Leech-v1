@@ -42,3 +42,13 @@ def test_version_format():
     ns = {}
     exec((ROOT / "bot/version.py").read_text(), ns)
     assert re.fullmatch(r"v\d+\.\d+\.\d+-\w+", ns["get_version"]())
+
+
+def test_ytdlp_gzip_deps():
+    r = (ROOT / "requirements.txt").read_text()
+    assert "yt-dlp[default]" in r and "brotli" in r and "zstandard" in r
+
+
+def test_no_br_header_without_decoder():
+    s = (ROOT / "bot/helper/mirror_utils/download_utils/direct_link_generator.py").read_text()
+    assert "gzip, deflate, br" not in s
