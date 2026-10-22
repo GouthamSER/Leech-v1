@@ -821,6 +821,13 @@ else:
     aria2.set_global_options(a2c_glo)
 
 qb_client = get_client()
+try:  # boot: nothing tracked yet, so torrents left from a crash/redeploy are orphans -> they cause 409 Conflict on re-add
+    _orphans = [t.hash for t in qb_client.torrents_info()]
+    if _orphans:
+        qb_client.torrents_delete(torrent_hashes=_orphans, delete_files=True)
+        log_info(f"Removed {len(_orphans)} orphan qBittorrent torrent(s)")
+except Exception as e:
+    log_error(f"qBit orphan cleanup failed: {e}")
 if not qbit_options:
     qbit_options = dict(qb_client.app_preferences())
     del qbit_options['listen_port']
