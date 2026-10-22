@@ -52,3 +52,15 @@ def test_ytdlp_gzip_deps():
 def test_no_br_header_without_decoder():
     s = (ROOT / "bot/helper/mirror_utils/download_utils/direct_link_generator.py").read_text()
     assert "gzip, deflate, br" not in s
+
+
+def test_envfiles_roundtrip(tmp_path):
+    import base64, importlib.util
+    spec = importlib.util.spec_from_file_location("envfiles", ROOT / "envfiles.py")
+    m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+    raw = b"\x80\x04binary-pickle\x00"
+    env = {"TOKEN_PICKLE_B64": base64.b64encode(raw).decode(), "COOKIES_TXT_B64": "# plain text"}
+    out = m.write_files(env, str(tmp_path))
+    assert set(out) == {"token.pickle", "cookies.txt"}
+    assert (tmp_path / "token.pickle").read_bytes() == raw
+    assert (tmp_path / "cookies.txt").read_text() == "# plain text"
